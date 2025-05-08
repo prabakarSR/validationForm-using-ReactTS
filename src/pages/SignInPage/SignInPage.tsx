@@ -58,9 +58,16 @@ export default function SignInPage() {
             required
           />
         </div>
-        <br />
+        <Link className="forgot" to="/forgot-password">
+          <span className="forgot">Forgot password?</span>
+        </Link>
         <div
-          style={{ color: "red", display: "flex", justifyContent: "center" }}
+          style={{
+            color: "red",
+            display: "flex",
+            justifyContent: "center",
+            marginTop: "4px",
+          }}
         >
           {error}
         </div>

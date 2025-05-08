@@ -4,3 +4,15 @@
 .link:hover{
     text-decoration: underline;
 }
+.forgot:hover{
+    color: blue;
+    cursor: pointer;
+}
+.forgot{
+    color: gray;
+    display: flex;
+    justify-content: right;
+    margin-top: 4px;
+    padding-right: 5px;
+    text-decoration: none;
+}
