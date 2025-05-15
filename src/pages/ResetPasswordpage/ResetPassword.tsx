@@ -4,6 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams } from "react-router-dom";
 import { RPassword } from "../ResetPasswordpage/services";
 import { useNavigate } from "react-router-dom";
+import "./ResetPassword.css";
+import { ToastContainer, toast, Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 type FormData = {
   password: string;
@@ -44,9 +48,20 @@ export default function ResetPassword() {
 
     try {
       const result = await RPassword(id, token, data);
-      alert("Password reset successful!");
+      toast.success("Password reset successfully", {
+        onClose: () => navigate("/"),
+        closeButton: false,
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: false,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
       console.log(result);
-      navigate("/");
     } catch (error: unknown) {
       if (error instanceof Error) {
         alert(error.message);
@@ -57,7 +72,7 @@ export default function ResetPassword() {
   };
 
   return (
-    <div>
+    <div className="resetP">
       <form onSubmit={handleSubmit(submitData)}>
         <h1>Reset Password</h1>
 
@@ -76,9 +91,10 @@ export default function ResetPassword() {
           <div style={{ color: "red" }}>{errors.confirmPassword.message}</div>
         )}
         <br />
-
+        <br />
         <button type="submit">Update</button>
       </form>
+      <ToastContainer />
     </div>
   );
 }

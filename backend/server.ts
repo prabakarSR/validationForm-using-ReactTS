@@ -4,18 +4,17 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import User from "./models/user";
 import bcrypt from "bcrypt";
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
+import multer from "multer";
+import images from "./models/images";
 
 const app = express();
 app.use(cors());
+app.use("/uploads", express.static("uploads"));
 app.use(bodyParser.json());
 
-interface LoginRequestBody {
-  username: string;
-  password: string;
-}
 
 interface ResetPassword {
   password: string;
@@ -80,6 +79,15 @@ const signupHandler: RequestHandler = async (req, res) => {
 
 app.post("/signup", signupHandler);
 
+// Secret key for signing JWTs
+const JWT_SECRET = "your_secret_key";
+
+// If you're defining LoginRequestBody interface somewhere:
+interface LoginRequestBody {
+  username: string;
+  password: string;
+}
+
 app.post(
   "/login",
   async (req: Request<object, unknown, LoginRequestBody>, res: Response) => {
@@ -98,13 +106,25 @@ app.post(
         return;
       }
 
-      res.status(200).json({ message: "Login successful!" });
+      const token = jwt.sign(
+        { username: user.username, id: user._id },
+        JWT_SECRET,
+        {
+          expiresIn: "1h",
+        }
+      );
+
+      res.status(200).json({ message: "Login successful!", token });
+      return;
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to login" });
+      return;
     }
   }
 );
+
+
 
 app.post(
   "/forgotPassword",
@@ -140,12 +160,10 @@ app.post(
 
       const info = await transporter.sendMail(mailOptions);
 
-      res
-        .status(200)
-        .json({
-          message: "Password reset email sent successfully",
-          emailResponse: info.response,
-        });
+      res.status(200).json({
+        message: "Password reset email sent successfully",
+        emailResponse: info.response,
+      });
       return;
     } catch (err) {
       console.error(err);
@@ -180,6 +198,123 @@ app.post(
     });
   }
 );
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now();
+    cb(null, uniqueSuffix + file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
+
+
+// Define the user payload type
+export interface UserPayload {
+  username: string;
+  id: string;
+}
+
+// Extend the Request type to include our user
+export interface CustomRequest extends Request {
+  user?: UserPayload;
+}
+
+export function authenticateToken(
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer <token>
+
+  if (!token) {
+    res.status(401).json({ error: "No token provided" });
+    return;
+  }
+
+  jwt.verify(token, "your_secret_key", (err, decoded) => {
+    if (err) {
+      res.status(403).json({ error: "Invalid token" });
+      return;
+    }
+
+    // Type guard to confirm decoded is the right type
+    if (
+      typeof decoded === "object" &&
+      decoded !== null &&
+      "username" in decoded
+    ) {
+      req.user = decoded as UserPayload;
+      next();
+    } else {
+      res.status(403).json({ error: "Invalid token payload" });
+      return;
+    }
+  });
+}
+
+
+app.post(
+  "/upload-image",
+  authenticateToken,
+  upload.single("image"),
+  async (req: CustomRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        res.status(400).send({ status: "error", message: "No file uploaded." });
+        return;
+      }
+
+      const username = req.user?.username;
+      if (!username) {
+        res
+          .status(400)
+          .send({ status: "error", message: "Invalid user token." });
+        return;
+      }
+
+      const newImage = new images({
+        image: req.file.filename,
+        uploadedBy: username,
+      });
+
+      await newImage.save();
+
+      res.send({ status: "ok", message: "Image uploaded successfully" });
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      res.status(500).send({ status: "error", error });
+    }
+  }
+);
+
+
+app.get(
+  "/get-images",
+  authenticateToken,
+  async (req: CustomRequest, res: Response) => {
+    try {
+      const username = req.user?.username;
+      if (!username) {
+        res.status(400).send({ status: "error", message: "Invalid user token." });
+        return;
+      }
+
+      const imageList = await images.find({ uploadedBy: username });
+
+      res.send({ status: "ok", data: imageList });
+    } catch (error) {
+      console.error("Error fetching images:", error);
+      res.status(500).send({ status: "error", error });
+    }
+  }
+);
+
+
 
 app.listen(4000, () => {
   console.log("Server running at http://localhost:4000");

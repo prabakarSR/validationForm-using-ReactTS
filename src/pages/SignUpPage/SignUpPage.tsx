@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signUpUser } from "../SignUpPage/services";
+import { ToastContainer, toast, Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 type FormData = {
   username: string;
@@ -23,17 +25,22 @@ export default function SignUpPage() {
       username: z
         .string()
         .min(3, { message: "Username must contain at least 3 characters" })
-        .max(30),
-      email: z.string().email(),
+        .max(30)
+        .transform((val) => val.replace(/\s/g, "")),
+      email: z
+        .string()
+        .email()
+        .transform((val) => val.replace(/\s/g, "")),
       phoneNo: z
         .string()
         .regex(/^\d{10}$/, { message: "Phone is invalid" })
         .length(10),
-      password: z.string().min(8, { message: "Minimum 8 characters" }).max(8),
-      confirmPassword: z
+      password: z
         .string()
-        .min(8, { message: "Password is mismatch " })
-        .max(8),
+        .min(8, { message: "Minimum 8 characters" })
+        .max(8)
+        .transform((val) => val.replace(/\s/g, "")),
+      confirmPassword: z.string(),
     })
     .refine((data) => data.password === data.confirmPassword, {
       message: "Password is mismatch",
@@ -51,9 +58,20 @@ export default function SignUpPage() {
   const submitData = async (data: FormData) => {
     try {
       const result = await signUpUser(data); // call service here
-      alert("Signup successful!");
+      toast.success("Signup successful", {
+        onClose: () => navigate("/"),
+        closeButton: false,
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: false,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
       console.log(result);
-      navigate("/homePage");
     } catch (error: unknown) {
       if (error instanceof Error) {
         setError(error.message);
@@ -64,7 +82,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <div>
+    <div className="signUpdiv">
       <form onSubmit={handleSubmit(submitData)}>
         <h1 style={{ marginLeft: "95px" }}>Sign Up</h1>
         <label>Username :</label>
@@ -115,6 +133,7 @@ export default function SignUpPage() {
           <button type="submit">Submit</button>
         </div>
       </form>
+      <ToastContainer/>
     </div>
   );
 }

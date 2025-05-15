@@ -17,7 +17,7 @@ export const loginUser = async (data: LoginRequestData) => {
       throw new Error(result.error || "Failed to login");
     }
 
-    return result;
+    return result; // now contains token
   } catch (error: unknown) {
     if (error instanceof Error) {
       throw new Error(error.message);

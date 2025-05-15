@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./SignInPage.css";
 import { loginUser } from "../SignInPage/services";
+import { ToastContainer, toast, Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function SignInPage() {
   const navigate = useNavigate();
@@ -18,9 +20,21 @@ export default function SignInPage() {
 
     try {
       const result = await loginUser({ username, password });
-      alert("Login successful!");
+      localStorage.setItem("token", result.token);
+      console.log("Token saved to localStorage");
+      toast.success("Login successfully", {
+        onClose: () => navigate("/homePage"),
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: false,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+        transition: Bounce,
+      });
       console.log(result);
-      navigate("/homePage");
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Login failed:", error.message);
@@ -33,7 +47,7 @@ export default function SignInPage() {
   };
 
   return (
-    <div>
+    <div className="signIndiv">
       <form onSubmit={handleSubmit}>
         <h1 style={{ display: "flex", justifyContent: "center" }}>Sign In</h1>
 
@@ -42,7 +56,7 @@ export default function SignInPage() {
         <input
           type="text"
           value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))}
           required
         />
         <br />
@@ -54,7 +68,7 @@ export default function SignInPage() {
           <input
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value.replace(/\s/g, ""))}
             required
           />
         </div>
@@ -81,6 +95,19 @@ export default function SignInPage() {
           <span style={{ color: "blue" }}> Signup</span>
         </Link>
       </form>
+      <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        theme="light"
+        transition={Bounce}
+        closeButton={false}
+      />
     </div>
   );
 }
