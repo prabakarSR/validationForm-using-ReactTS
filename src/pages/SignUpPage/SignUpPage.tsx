@@ -68,7 +68,7 @@ export default function SignUpPage() {
         pauseOnHover: false,
         draggable: true,
         progress: undefined,
-        theme: "light",
+        theme: "colored",
         transition: Bounce,
       });
       console.log(result);

@@ -9,6 +9,8 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import multer from "multer";
 import images from "./models/images";
+import path from "path";
+import fs from "fs";
 
 const app = express();
 app.use(cors());
@@ -310,6 +312,40 @@ app.get(
     } catch (error) {
       console.error("Error fetching images:", error);
       res.status(500).send({ status: "error", error });
+    }
+  }
+);
+
+app.delete(
+  "/delete-image/:id",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    try {
+      const id = req.params.id;
+      const image = await images.findById(id);
+
+      if (!image) {
+        res.status(404).send("Image not found");
+        return;
+      }
+
+      // Remove the file from uploads folder too if it exists
+      const filePath = path.join(__dirname, "..", "uploads", image.image);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+
+      await images.findByIdAndDelete(id);
+
+      res.status(200).send("Image deleted");
+    } catch (error: unknown) {
+      console.error("Error deleting image:", error);
+
+      if (error instanceof Error) {
+        res.status(500).send(error.message);
+      } else {
+        res.status(500).send("An unknown error occurred");
+      }
     }
   }
 );

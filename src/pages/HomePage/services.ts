@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export const uploadI = async (formData: FormData) => {
   const token = localStorage.getItem("token"); // Get token from localStorage
 
@@ -48,4 +50,13 @@ export const getImages = async () => {
     }
     throw new Error("Get images request failed");
   }
+};
+
+export const deleteImage = async (id: string) => {
+  const token = localStorage.getItem("token");
+  return axios.delete(`http://localhost:4000/delete-image/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };

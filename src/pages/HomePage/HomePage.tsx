@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getImages, uploadI } from "../HomePage/services";
+import { getImages, uploadI, deleteImage } from "../HomePage/services";
 import { useNavigate } from "react-router-dom";
 import "./HomePage.css";
 import { ToastContainer, toast, Bounce } from "react-toastify";
@@ -44,7 +44,7 @@ export default function HomePage() {
       toast.error("Please select an image first", {
         closeButton: false,
         position: "top-right",
-        autoClose: 2000,
+        autoClose: 3000,
         hideProgressBar: true,
         closeOnClick: false,
         pauseOnHover: true,
@@ -69,10 +69,9 @@ export default function HomePage() {
       const result = await uploadI(formData);
       console.log(result);
       toast.success("Image uploaded successfully", {
-        onClose: () => fetchImages(),
         closeButton: false,
         position: "top-right",
-        autoClose: 1000,
+        autoClose: 3000,
         hideProgressBar: true,
         closeOnClick: false,
         pauseOnHover: false,
@@ -83,6 +82,7 @@ export default function HomePage() {
       });
       setImageFile(null);
       setImagePreview(null);
+      fetchImages();
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Upload failed:", error.message);
@@ -116,14 +116,46 @@ export default function HomePage() {
     navigate("/");
   };
 
+  const handleDelete = async (id: string) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this image?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await deleteImage(id);
+      toast.success("Image deleted successfully", {
+        closeButton: false,
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: false,
+        draggable: true,
+        theme: "dark",
+        transition: Bounce,
+      });
+      fetchImages(); // refresh image list after delete
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Delete failed:", error.message);
+      } else {
+        console.error("Unknown error:", error);
+      }
+    }
+  };
+
+
   return (
     <div>
-      <div style={{ display: "flex" }}>
-        <span style={{ color: "black", fontSize: "45px", marginLeft: "700px" }}>
+      <div style={{ display: "flex", justifyContent: "right" }}>
+        <span
+          style={{ color: "black", fontSize: "45px", marginRight: "645px" }}
+        >
           Home Page
-        </span>
+        </span>{" "}
         <button
-          style={{ width: "80px", marginLeft: "665px", marginTop: "6px" }}
+          style={{ width: "80px", marginTop: "6px" }}
           onClick={handleLogout}
         >
           Logout
@@ -136,9 +168,14 @@ export default function HomePage() {
         <br />
         <div className="homePagediv">
           <div>
-            <div style={{ fontSize: "20px" }}>
+            <span style={{ fontSize: "20px", color: "black" }}>
               1. Select the image to upload :
-            </div>
+            </span>
+            <br />
+            <span style={{ color: "black" }}>
+              (File size should be 2MB or less)
+            </span>
+            <br />
             <br />
             <input
               type="file"
@@ -173,15 +210,48 @@ export default function HomePage() {
       </form>
       <br />
       <br />
-      <h2>Uploaded Images</h2>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "20px" }}>
+      <h1 style={{ display: "flex", justifyContent: "center" }}>
+        Uploaded Images
+      </h1>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          marginLeft: "0px",
+        }}
+      >
         {allImages.map((img) => (
-          <div key={img._id}>
+          <div
+            style={{
+              height: "300px",
+              width: "300px",
+              display: "flex",
+              justifyContent: "center",
+              flexDirection: "column",
+              alignItems:'center'
+            }}
+            key={img._id}
+          >
             <img
               src={`http://localhost:4000/uploads/${img.image}`}
               alt=""
-              style={{ width: "200px" }}
+              style={{ width: "200px", height: "200px" }}
             />
+            <br />
+            <div>
+              <button
+                style={{
+                  width: "100px",
+                  backgroundColor: "red",
+                  color: "white",
+                  border: "none",
+                }}
+                onClick={() => handleDelete(img._id)}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))}
       </div>
